@@ -11,10 +11,15 @@ import {
   CircularProgress,
   Alert,
   IconButton,
+  Tooltip,
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import CheckIcon from '@mui/icons-material/Check';
 import { useRouter } from 'next/navigation';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Message {
   type: 'user' | 'assistant' | 'tool' | 'error';
@@ -219,6 +224,65 @@ export default function ChatPage() {
   const renderMessageContent = (msg: Message) => {
     const { type, content, tool } = msg;
 
+    const CodeBlock = ({ children }: { children: any }) => {
+      const [copied, setCopied] = useState(false);
+      const [isHovered, setIsHovered] = useState(false);
+      
+      const handleCopy = async () => {
+        let codeText = '';
+        if (typeof children === 'string') {
+          codeText = children;
+        } else if (children?.props?.children) {
+          codeText = children.props.children;
+        }
+        
+        await navigator.clipboard.writeText(codeText);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      };
+
+      return (
+        <Box 
+          sx={{ position: 'relative' }}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
+          <pre style={{ 
+            backgroundColor: 'rgba(0, 0, 0, 0.04)',
+            padding: '16px',
+            paddingRight: '48px', // Space for copy button
+            borderRadius: '4px',
+            overflowX: 'auto'
+          }}>
+            <Box 
+              sx={{ 
+                position: 'absolute',
+                top: '8px',
+                right: '8px',
+                opacity: isHovered ? 1 : 0,
+                transition: 'opacity 0.2s',
+                visibility: isHovered ? 'visible' : 'hidden'
+              }}
+            >
+              <Tooltip title={copied ? "Copied!" : "Copy code"}>
+                <IconButton 
+                  size="small" 
+                  onClick={handleCopy}
+                  sx={{ 
+                    backgroundColor: 'background.paper',
+                    '&:hover': { backgroundColor: 'action.hover' }
+                  }}
+                >
+                  {copied ? <CheckIcon fontSize="small" /> : <ContentCopyIcon fontSize="small" />}
+                </IconButton>
+              </Tooltip>
+            </Box>
+            <code>{children}</code>
+          </pre>
+        </Box>
+      );
+    };
+
     if (type === 'tool') {
       return (
         <Box>
@@ -226,6 +290,48 @@ export default function ChatPage() {
             Tool: {tool}
           </Typography>
           <Typography variant="body1">{content}</Typography>
+        </Box>
+      );
+    }
+
+    if (type === 'assistant') {
+      return (
+        <Box sx={{ 
+          '& code': {
+            backgroundColor: 'rgba(0, 0, 0, 0.04)',
+            padding: '2px 4px',
+            borderRadius: 1,
+            fontFamily: 'monospace'
+          },
+          '& p': {
+            margin: '8px 0'
+          },
+          '& ul, & ol': {
+            marginLeft: 3
+          }
+        }}>
+          <ReactMarkdown 
+            remarkPlugins={[remarkGfm]}
+            components={{
+              p: ({node, ...props}) => <Typography variant="body1" {...props} />,
+              a: ({node, ...props}) => <Typography component="a" color="primary" {...props} style={{textDecoration: 'underline'}} />,
+              h1: ({node, ...props}) => <Typography variant="h4" {...props} sx={{mt: 2, mb: 1}} />,
+              h2: ({node, ...props}) => <Typography variant="h5" {...props} sx={{mt: 2, mb: 1}} />,
+              h3: ({node, ...props}) => <Typography variant="h6" {...props} sx={{mt: 2, mb: 1}} />,
+              code: ({children, ...props}: any) => 
+                props.inline ? <code {...props}>{children}</code> : children,
+              pre: ({node, children, ...props}) => {
+                const codeContent = Array.isArray(children) 
+                  ? children.find(child => child?.props?.children)
+                  : children;
+                
+                const codeText = codeContent?.props?.children || '';
+                return <CodeBlock>{codeText}</CodeBlock>;
+              },
+            }}
+          >
+            {content}
+          </ReactMarkdown>
         </Box>
       );
     }
