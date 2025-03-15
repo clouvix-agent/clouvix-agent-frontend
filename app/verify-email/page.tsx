@@ -1,0 +1,149 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import {
+  Box,
+  TextField,
+  Button,
+  Paper,
+  Typography,
+  Container,
+  Alert,
+  CircularProgress
+} from '@mui/material';
+import GridPattern from '../components/GridPattern';
+
+export default function VerifyEmailPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const email = searchParams.get('email');
+  
+  const [otp, setOtp] = useState('');
+  const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!email) {
+      router.push('/register');
+    }
+  }, [email, router]);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await fetch('https://backend.clouvix.com/verify-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          otp,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Verification failed');
+      }
+
+      router.push('/login');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!email) {
+    return null;
+  }
+
+  return (
+    <Container maxWidth={false} sx={{ height: '100vh', bgcolor: 'black', position: 'relative' }}>
+      <GridPattern />
+      <Box
+        sx={{
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          p: 3,
+          position: 'relative',
+          zIndex: 1
+        }}
+      >
+        <Paper
+          elevation={3}
+          sx={{
+            p: 4,
+            width: '100%',
+            maxWidth: 450,
+            bgcolor: 'rgba(255, 255, 255, 0.8)',
+            borderRadius: 2,
+            backdropFilter: 'blur(10px)'
+          }}
+        >
+          <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ mb: 2 }}>
+            Verify Email
+          </Typography>
+          
+          <Typography variant="body1" align="center" color="textSecondary" sx={{ mb: 4 }}>
+            Please enter the verification code sent to
+            <Typography component="span" color="primary" sx={{ fontWeight: 500 }}>
+              {' '}{email}
+            </Typography>
+          </Typography>
+
+          {error && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {error}
+            </Alert>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+              <TextField
+                fullWidth
+                required
+                id="otp"
+                name="otp"
+                label="Verification Code"
+                variant="outlined"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                autoComplete="off"
+              />
+
+              <Button
+                type="submit"
+                variant="contained"
+                size="large"
+                disabled={loading}
+                sx={{
+                  mt: 2,
+                  bgcolor: '#1976d2',
+                  '&:hover': {
+                    bgcolor: '#1565c0'
+                  }
+                }}
+              >
+                {loading ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  'Verify Email'
+                )}
+              </Button>
+            </Box>
+          </form>
+        </Paper>
+      </Box>
+    </Container>
+  );
+} 
