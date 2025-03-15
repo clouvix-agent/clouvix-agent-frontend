@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Box,
@@ -15,7 +15,46 @@ import {
 import GridPattern from '../components/GridPattern';
 import { setAuthTokens } from '../utils/auth';
 
-export default function VerifyLoginOtpPage() {
+// Loading component to show while the main component is loading
+function VerifyLoginOtpLoading() {
+  return (
+    <Container maxWidth={false} sx={{ height: '100vh', bgcolor: 'black', position: 'relative' }}>
+      <GridPattern />
+      <Box
+        sx={{
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          p: 3,
+          position: 'relative',
+          zIndex: 1
+        }}
+      >
+        <Paper
+          elevation={3}
+          sx={{
+            p: 4,
+            width: '100%',
+            maxWidth: 450,
+            bgcolor: 'rgba(255, 255, 255, 0.8)',
+            borderRadius: 2,
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center'
+          }}
+        >
+          <CircularProgress />
+        </Paper>
+      </Box>
+    </Container>
+  );
+}
+
+// Main component that uses useSearchParams
+function VerifyLoginOtpContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get('email');
@@ -161,5 +200,14 @@ export default function VerifyLoginOtpPage() {
         </Paper>
       </Box>
     </Container>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function VerifyLoginOtpPage() {
+  return (
+    <Suspense fallback={<VerifyLoginOtpLoading />}>
+      <VerifyLoginOtpContent />
+    </Suspense>
   );
 } 
