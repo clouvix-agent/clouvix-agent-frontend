@@ -22,7 +22,7 @@ import CheckIcon from '@mui/icons-material/Check';
 import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { clearAuth } from '../utils/auth';
+import { clearAuth } from '../../utils/auth';
 
 interface Message {
   type: 'user' | 'assistant' | 'tool' | 'error';
@@ -342,42 +342,8 @@ export default function ChatPage() {
     return <Typography variant="body1">{content}</Typography>;
   };
 
-  const handleLogout = async () => {
-    // Close WebSocket connection if it exists
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
-    
-    // Clear any pending reconnection attempts
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
-
-    // Clear auth and redirect
-    await clearAuth();
-    window.location.href = '/login';
-  };
-
   return (
       <Container maxWidth="md" sx={{ height: '100vh', py: 4 }}>
-      <Tooltip title="Logout" placement="left">
-        <Fab
-          color="primary"
-          size="medium"
-          onClick={handleLogout}
-          sx={{
-            position: 'fixed',
-            top: 16,
-            right: 16,
-            zIndex: 1000,
-          }}
-        >
-          <LogoutIcon />
-        </Fab>
-      </Tooltip>
-      
       <Paper elevation={3} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

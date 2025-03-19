@@ -16,7 +16,7 @@ import {
   Tab,
   Tabs
 } from '@mui/material';
-import GridPattern from '../components/GridPattern';
+import GridPattern from '../../components/GridPattern';
 import { setAuthTokens } from '../utils/auth';
 
 interface LoginFormData {

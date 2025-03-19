@@ -13,7 +13,7 @@ import {
   Alert,
   CircularProgress
 } from '@mui/material';
-import GridPattern from '../components/GridPattern';
+import GridPattern from '../../components/GridPattern';
 
 interface RegisterFormData {
   username: string;
