@@ -1,8 +1,10 @@
+"use client"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Plus, Trash2 } from "lucide-react"
-import { useState } from "react"
+import { Plus, Trash2, X } from "lucide-react"
+import { useState, useEffect } from "react"
 
 interface EnvVariable {
   key: string
@@ -11,18 +13,32 @@ interface EnvVariable {
 
 interface BucketDetailProps {
   serviceName: string
-  bucketName: string
-  variables: EnvVariable[]
-  onSave: (variables: EnvVariable[]) => void
+  isNewBucket: boolean
+  onSave: (bucketName: string, variables: EnvVariable[]) => void
+  onCancel: () => void
+  defaultKeys: EnvVariable[]
+  existingBucketName?: string
 }
 
-export default function BucketDetail({
+const BucketDetail: React.FC<BucketDetailProps> = ({
   serviceName,
-  bucketName,
-  variables: initialVariables,
+  isNewBucket,
   onSave,
-}: BucketDetailProps) {
-  const [variables, setVariables] = useState<EnvVariable[]>(initialVariables)
+  onCancel,
+  defaultKeys,
+  existingBucketName = "",
+}) => {
+  const [bucketName, setBucketName] = useState(existingBucketName)
+  const [variables, setVariables] = useState<EnvVariable[]>([])
+
+  useEffect(() => {
+    // Initialize with default keys if provided
+    if (defaultKeys && defaultKeys.length > 0) {
+      setVariables(defaultKeys)
+    } else {
+      setVariables([{ key: "", value: "" }])
+    }
+  }, [defaultKeys])
 
   const addVariable = () => {
     setVariables([...variables, { key: "", value: "" }])
@@ -38,18 +54,40 @@ export default function BucketDetail({
     setVariables(newVariables)
   }
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">{serviceName}</h2>
-        <p className="text-sm text-muted-foreground">Bucket: {bucketName}</p>
-      </div>
+  const handleSubmit = () => {
+    if (!bucketName.trim()) {
+      alert("Please enter a bucket name")
+      return
+    }
+    onSave(bucketName, variables)
+  }
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Environment Variables</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+  return (
+    <Card className="relative">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute right-4 top-4"
+        onClick={onCancel}
+      >
+        <X className="h-4 w-4" />
+      </Button>
+      <CardHeader>
+        <CardTitle>{isNewBucket ? 'New Credential Bucket' : 'Edit Credential Bucket'}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Bucket Name</label>
+          <Input
+            placeholder="Enter bucket name"
+            value={bucketName}
+            onChange={(e) => setBucketName(e.target.value)}
+            disabled={!isNewBucket} // Disable name editing for existing buckets
+          />
+        </div>
+
+        <div className="space-y-4">
+          <label className="text-sm font-medium">Credentials</label>
           {variables.map((variable, index) => (
             <div key={index} className="flex items-center gap-4">
               <Input
@@ -74,7 +112,7 @@ export default function BucketDetail({
               </Button>
             </div>
           ))}
-          
+        
           <Button
             variant="outline"
             onClick={addVariable}
@@ -86,12 +124,14 @@ export default function BucketDetail({
 
           <Button 
             className="w-full"
-            onClick={() => onSave(variables)}
+            onClick={handleSubmit}
           >
-            Save Changes
+            {isNewBucket ? 'Save Credentials' : 'Update Credentials'}
           </Button>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   )
-} 
+}
+
+export default BucketDetail 
