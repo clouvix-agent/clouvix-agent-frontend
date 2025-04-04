@@ -1,41 +1,45 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import WorkspaceCard from "@/components/WorkspaceCard"
 import WorkspaceDetail from "@/components/WorkspaceDetail"
 
-// Mock data for demonstration
-const mockWorkspaces = [
-  {
-    id: "test1",
-    projectName: "test1",
-    terraformStatus: "Done",
-    lastRun: "Yesterday",
-    terraformFileLocation: "github/s3 location",
-    terraformStateFileLocation: ""
-  },
-  {
-    id: "test2",
-    projectName: "test2",
-    terraformStatus: "Done",
-    lastRun: "Yesterday",
-    terraformFileLocation: "github/s3 location",
-    terraformStateFileLocation: ""
-  },
-  {
-    id: "test3",
-    projectName: "test3",
-    terraformStatus: "Done",
-    lastRun: "Yesterday",
-    terraformFileLocation: "github/s3 location",
-    terraformStateFileLocation: ""
-  }
-]
+// Define TypeScript interface for workspace data
+interface Workspace {
+  id: string
+  projectName: string
+  terraformStatus: string
+  lastRun: string
+  terraformFileLocation: string
+  terraformStateFileLocation: string
+}
 
 export default function WorkspacePage() {
   const [selectedWorkspace, setSelectedWorkspace] = useState<string | null>(null)
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([])
+  const [loading, setLoading] = useState(true)
   
-  const selectedWorkspaceData = mockWorkspaces.find(w => w.id === selectedWorkspace)
+  useEffect(() => {
+    const fetchWorkspaces = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/workspaces') // Adjust this endpoint to match your API
+        const data = await response.json()
+        setWorkspaces(data)
+      } catch (error) {
+        console.error('Error fetching workspaces:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchWorkspaces()
+  }, [])
+  
+  const selectedWorkspaceData = workspaces.find(w => w.id === selectedWorkspace)
+
+  if (loading) {
+    return <div>Loading...</div>
+  }
 
   return (
     <div className="space-y-6">
@@ -43,7 +47,7 @@ export default function WorkspacePage() {
         <>
           <h1 className="text-2xl font-bold">Workspaces Under your Organisation</h1>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {mockWorkspaces.map((workspace) => (
+            {workspaces.map((workspace) => (
               <WorkspaceCard
                 key={workspace.id}
                 projectName={workspace.projectName}
