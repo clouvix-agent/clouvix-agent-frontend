@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Bot, LayoutGrid, Network } from "lucide-react"
+import { Bot, Boxes, LayoutGrid, Network } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -28,6 +28,15 @@ export default function Sidebar() {
           >
             <LayoutGrid className="mr-2 h-4 w-4" />
             Workspaces
+          </Button>
+        </Link>
+        <Link href="/inventory" className="w-full">
+          <Button 
+            variant={pathname === "/inventory" ? "secondary" : "ghost"}
+            className="w-full justify-start rounded-lg"
+          >
+            <Boxes className="mr-2 h-4 w-4" />
+            Inventory
           </Button>
         </Link>
         <Link href="/connections" className="w-full">

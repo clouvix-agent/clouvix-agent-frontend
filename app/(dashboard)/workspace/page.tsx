@@ -22,7 +22,7 @@ export default function WorkspacePage() {
   useEffect(() => {
     const fetchWorkspaces = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/workspaces') // Adjust this endpoint to match your API
+        const response = await fetch('https://backend.clouvix.com/api/workspaces') // Adjust this endpoint to match your API
         const data = await response.json()
         setWorkspaces(data)
       } catch (error) {

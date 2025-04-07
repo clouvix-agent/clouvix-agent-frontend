@@ -64,7 +64,7 @@ export default function ConnectionsPage() {
         throw new Error('No authentication token found')
       }
 
-      const response = await fetch(`http://localhost:8000/api/connections/${serviceId}`, {
+      const response = await fetch(`https://backend.clouvix.com/api/connections/${serviceId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -105,7 +105,7 @@ export default function ConnectionsPage() {
       if (!token) {
         throw new Error('No authentication token found')
       }
-      const response = await fetch('http://localhost:8000/api/connections', {
+      const response = await fetch('https://backend.clouvix.com/api/connections', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
