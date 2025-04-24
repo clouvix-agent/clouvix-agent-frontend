@@ -26,7 +26,7 @@ export default function WorkspacePage() {
           throw new Error('No authentication token found')
         }
   
-        const response = await fetch('https://backend.clouvix.com/api/workspaces', {
+        const response = await fetch('https://backend.clouvix.comapi/workspaces', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`

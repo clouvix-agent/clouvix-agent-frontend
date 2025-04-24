@@ -44,6 +44,8 @@ export default function ChatPage() {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -76,8 +78,12 @@ export default function ChatPage() {
           if (data?.type === 'complete' || data?.type === 'error') {
             setIsLoading(false);
           }
+          
+          if (data?.suggestions) {
+            setSuggestions(data.suggestions);  // ✅ Update suggestions
+          }
 
-          const newMsg = convertServerDataToMessage(data);
+          const newMsg = convertServerDataToMessage(data, setSuggestions);
           if (newMsg) {
             setMessages((prev) => {
               if (prev.length > 0) {
@@ -150,7 +156,7 @@ export default function ChatPage() {
     };
   }, []);
 
-  function convertServerDataToMessage(data: any): Message | null {
+  function convertServerDataToMessage(data: any, setSuggestions: (s: string[]) => void): Message | null {
     if (typeof data === 'string') {
       return {
         type: 'error',
@@ -158,20 +164,47 @@ export default function ChatPage() {
         timestamp: new Date(),
       };
     }
-
+  
     if (data && typeof data === 'object' && 'type' in data) {
       const { type } = data;
-      
+  
       switch (type) {
         case 'step':
-          return {
-            type: 'assistant',
-            role: 'assistant',
-            content: data.content,
-            timestamp: new Date(),
-          };
+          if (typeof data.content === 'string') {
+            try {
+              const parsed = JSON.parse(data.content);
+  
+              if (parsed.reply && parsed.suggestions) {
+                setSuggestions(parsed.suggestions); // ✅ Update suggestions
+                return {
+                  type: 'assistant',
+                  role: 'assistant',
+                  content: parsed.reply,
+                  timestamp: new Date(),
+                };
+              } else {
+                return {
+                  type: 'assistant',
+                  role: 'assistant',
+                  content: data.content,
+                  timestamp: new Date(),
+                };
+              }
+            } catch (err) {
+              // Not a JSON string
+              return {
+                type: 'assistant',
+                role: 'assistant',
+                content: data.content,
+                timestamp: new Date(),
+              };
+            }
+          }
+          break;
+  
         case 'complete':
           return null;
+  
         default:
           return {
             type: 'error',
@@ -180,13 +213,14 @@ export default function ChatPage() {
           };
       }
     }
-
+  
     return {
       type: 'error',
       content: `Unrecognized data: ${JSON.stringify(data)}`,
       timestamp: new Date(),
     };
   }
+  
 
   const handleSendMessage = () => {
     if (!inputMessage.trim() || !wsRef.current || !isConnected) return;
@@ -198,6 +232,7 @@ export default function ChatPage() {
     };
     setMessages((prev) => [...prev, userMessage]);
 
+    setSuggestions([]);
     wsRef.current.send(inputMessage);
 
     setInputMessage('');
@@ -397,6 +432,23 @@ export default function ChatPage() {
           ))}
           <div ref={messagesEndRef} />
         </Box>
+
+                  {suggestions.length > 0 && (
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
+              {suggestions.map((suggestion, index) => (
+                <Button
+                  key={index}
+                  variant="outlined"
+                  size="small"
+                  onClick={() => setInputMessage(suggestion)}
+                  sx={{ textTransform: 'none' }}
+                >
+                  {suggestion}
+                </Button>
+              ))}
+            </Box>
+          )}
+
 
         <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
           <Box sx={{ display: 'flex', gap: 1 }}>
