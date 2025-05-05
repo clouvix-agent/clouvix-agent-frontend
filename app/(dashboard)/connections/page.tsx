@@ -64,7 +64,7 @@ export default function ConnectionsPage() {
         throw new Error('No authentication token found')
       }
 
-      const response = await fetch(`https://backend.clouvix.com/api/connections/${serviceId}`, {
+      const response = await fetch(`https://b:8000/api/connections/${serviceId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -105,7 +105,7 @@ export default function ConnectionsPage() {
       if (!token) {
         throw new Error('No authentication token found')
       }
-      const response = await fetch('https://backend.clouvix.com/api/connections', {
+      const response = await fetch('http://backend.clouvix.com/api/connections', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -143,6 +143,45 @@ export default function ConnectionsPage() {
       // }
     }
   }
+
+  const handleUpdateVariables = async (bucketName: string, variables: { key: string; value: string }[]) => {
+    try {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+      if (!token) {
+        throw new Error('No authentication token found')
+      }
+      const response = await fetch(`http://backend.clouvix.com/api/connections/${selectedService}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          serviceId: selectedService,
+          bucketName,
+          variables
+        }),
+      })
+  
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Unauthorized - Please login again')
+        }
+        throw new Error('Failed to update credentials')
+      }
+  
+      // ✅ Update the bucket in the local state
+      setBuckets(prevBuckets => prevBuckets.map(bucket => 
+        bucket.name === bucketName ? { ...bucket, variables } : bucket
+      ))
+  
+      setShowBucketForm(false)
+      setSelectedBucket(null)
+    } catch (error) {
+      console.error('Error updating credentials:', error)
+    }
+  }
+  
 
   const handleBucketClick = (bucket: Bucket) => {
     setSelectedBucket(bucket)
@@ -190,7 +229,7 @@ export default function ConnectionsPage() {
           <BucketDetail
             serviceName={service.name}
             isNewBucket={!selectedBucket}
-            onSave={handleSaveVariables}
+            onSave={selectedBucket ? handleUpdateVariables : handleSaveVariables}
             defaultKeys={selectedBucket ? selectedBucket.variables : service.defaultKeys}
             existingBucketName={selectedBucket?.name}
             onCancel={() => {

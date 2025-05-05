@@ -7,23 +7,56 @@ const awsLogo = "https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_
 export default function InventoryPage() {
   const [inventoryData, setInventoryData] = useState<any>(null)
   const [selectedService, setSelectedService] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchInventory = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+      if (!token) {
+        throw new Error('No authentication token found')
+      }
+
+      const response = await fetch("http://backend.clouvix.com/api/inventory", {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Unauthorized - Please login again')
+        }
+        throw new Error('Failed to fetch inventory')
+      }
+
+      const data = await response.json()
+      setInventoryData(data)
+    } catch (err: any) {
+      console.error("Failed to fetch inventory", err)
+      setError(err.message || 'An unexpected error occurred')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchInventory = async () => {
-      try {
-        const response = await fetch("https://backend.clouvix.com/api/aws_inventory")
-        const data = await response.json()
-        setInventoryData(data)
-      } catch (err) {
-        console.error("Failed to fetch inventory", err)
-      }
-    }
-
     fetchInventory()
   }, [])
 
-  if (!inventoryData) {
+  if (isLoading) {
     return <div className="text-white p-8">Loading AWS Inventory...</div>
+  }
+
+  if (error) {
+    return <div className="text-red-500 p-8">Error: {error}</div>
+  }
+
+  if (!inventoryData) {
+    return <div className="text-white p-8">No inventory data available.</div>
   }
 
   const serviceKeys = Object.keys(inventoryData)
