@@ -1,10 +1,9 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Bot, Boxes, LayoutGrid, Network } from "lucide-react"
+import { Bot, Boxes, LayoutGrid, Network, Gift } from "lucide-react"  // ✅ Added Gift
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { cn } from "@/lib/utils"
 
 export default function Sidebar() {
   const pathname = usePathname()
@@ -46,6 +45,15 @@ export default function Sidebar() {
           >
             <Network className="mr-2 h-4 w-4" />
             Connections
+          </Button>
+        </Link>
+        <Link href="/recommendations" className="w-full">
+          <Button 
+            variant={pathname === "/recommendations" ? "secondary" : "ghost"}  // ✅ Correct path check
+            className="w-full justify-start rounded-lg"
+          >
+            <Gift className="mr-2 h-4 w-4" />   {/* ✅ Added Gift icon */}
+            Recommendations
           </Button>
         </Link>
       </div>

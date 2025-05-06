@@ -16,14 +16,14 @@ export default function WorkspaceCard({ projectName, terraformStatus, lastRun, o
       <CardHeader>
         <CardTitle className="text-lg">Project Name: {projectName}</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2">
+      {/* <CardContent className="space-y-2">
         <p className="text-sm text-muted-foreground">
           Terraform Run Status: {terraformStatus}
         </p>
         <p className="text-sm text-muted-foreground">
           Last Run: {lastRun}
         </p>
-      </CardContent>
+      </CardContent> */}
     </Card>
   )
 } 
