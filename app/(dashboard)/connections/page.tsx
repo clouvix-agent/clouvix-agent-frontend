@@ -64,7 +64,7 @@ export default function ConnectionsPage() {
         throw new Error('No authentication token found')
       }
 
-      const response = await fetch(`https://b:8000/api/connections/${serviceId}`, {
+      const response = await fetch(`https://backend.clouvix.com/api/connections/${serviceId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
