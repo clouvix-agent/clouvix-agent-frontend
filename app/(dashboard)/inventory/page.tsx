@@ -20,7 +20,7 @@ export default function InventoryPage() {
         throw new Error('No authentication token found')
       }
 
-      const response = await fetch("http://backend.clouvix.com/api/inventory", {
+      const response = await fetch("https://backend.clouvix.com/api/inventory", {
         headers: {
           'Authorization': `Bearer ${token}`
         }
