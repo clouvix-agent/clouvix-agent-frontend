@@ -47,9 +47,9 @@ export default function Sidebar() {
             Connections
           </Button>
         </Link>
-        <Link href="/recommendations" className="w-full">
+        <Link href="/recommendation" className="w-full">
           <Button 
-            variant={pathname === "/recommendations" ? "secondary" : "ghost"}  // ✅ Correct path check
+            variant={pathname === "/recommendation" ? "secondary" : "ghost"}  // ✅ Correct path check
             className="w-full justify-start rounded-lg"
           >
             <Gift className="mr-2 h-4 w-4" />   {/* ✅ Added Gift icon */}
