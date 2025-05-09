@@ -60,7 +60,7 @@ export default function ChatPage() {
       }
 
       const token = localStorage.getItem("token");
-      const ws = new WebSocket(`ws://localhost:8000/ws/chat?token=${token}`);
+      const ws = new WebSocket(`wss://backend.clouvix.com/ws/chat?token=${token}`);
 
       // const ws = new WebSocket('ws://localhost:8000/ws/chat');
 
