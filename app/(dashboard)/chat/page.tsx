@@ -31,6 +31,7 @@ interface Message {
   tool?: string;
   tool_call_id?: string;
   timestamp: Date;
+  severity?: 'error' | 'warning' | 'info' | 'success';
 }
 
 export default function ChatPage() {
@@ -73,17 +74,37 @@ export default function ChatPage() {
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log('Received:', data);
+          console.log('Raw WebSocket data:', data);
 
           if (data?.type === 'complete' || data?.type === 'error') {
             setIsLoading(false);
           }
           
+          // Handle suggestions directly from the data object
           if (data?.suggestions) {
-            setSuggestions(data.suggestions);  // ✅ Update suggestions
+            console.log('Setting suggestions from data:', data.suggestions);
+            setSuggestions(data.suggestions);
+          }
+
+          // If the data itself is a reply with suggestions
+          if (data?.reply && data?.suggestions) {
+            console.log('Found reply with suggestions:', data);
+            setSuggestions(data.suggestions);
+            setMessages((prev) => [
+              ...prev,
+              {
+                type: 'assistant',
+                role: 'assistant',
+                content: data.reply,
+                timestamp: new Date(),
+              },
+            ]);
+            return;
           }
 
           const newMsg = convertServerDataToMessage(data, setSuggestions);
+          console.log('Converted message:', newMsg);
+          
           if (newMsg) {
             setMessages((prev) => {
               if (prev.length > 0) {
@@ -156,67 +177,100 @@ export default function ChatPage() {
     };
   }, []);
 
+  function cleanMarkdownCodeBlock(content: string): string {
+    // Remove markdown code block markers and language identifier
+    return content.replace(/```json\n|\n```/g, '').trim();
+  }
+
   function convertServerDataToMessage(data: any, setSuggestions: (s: string[]) => void): Message | null {
+    console.log('Converting server data:', data);
+
+    // If data is a string, try to parse it as JSON
     if (typeof data === 'string') {
-      return {
-        type: 'error',
-        content: data,
-        timestamp: new Date(),
-      };
-    }
-  
-    if (data && typeof data === 'object' && 'type' in data) {
-      const { type } = data;
-  
-      switch (type) {
-        case 'step':
-          if (typeof data.content === 'string') {
-            try {
-              const parsed = JSON.parse(data.content);
-  
-              if (parsed.reply && parsed.suggestions) {
-                setSuggestions(parsed.suggestions); // ✅ Update suggestions
-                return {
-                  type: 'assistant',
-                  role: 'assistant',
-                  content: parsed.reply,
-                  timestamp: new Date(),
-                };
-              } else {
-                return {
-                  type: 'assistant',
-                  role: 'assistant',
-                  content: data.content,
-                  timestamp: new Date(),
-                };
-              }
-            } catch (err) {
-              // Not a JSON string
-              return {
-                type: 'assistant',
-                role: 'assistant',
-                content: data.content,
-                timestamp: new Date(),
-              };
-            }
-          }
-          break;
-  
-        case 'complete':
-          return null;
-  
-        default:
+      try {
+        const cleanedContent = cleanMarkdownCodeBlock(data);
+        const parsed = JSON.parse(cleanedContent);
+        console.log('Parsed string data:', parsed);
+        
+        if (parsed.reply && parsed.suggestions) {
+          setSuggestions(parsed.suggestions);
           return {
-            type: 'error',
-            content: `Unrecognized message type: ${type}`,
+            type: 'assistant',
+            role: 'assistant',
+            content: parsed.reply,
             timestamp: new Date(),
           };
+        }
+      } catch (err) {
+        console.log('Failed to parse string as JSON:', err);
+        return {
+          type: 'assistant',
+          role: 'assistant',
+          content: data,
+          timestamp: new Date(),
+        };
       }
     }
-  
+
+    // If data is an object
+    if (data && typeof data === 'object') {
+      // Handle direct reply/suggestions format
+      if (data.reply && data.suggestions) {
+        setSuggestions(data.suggestions);
+        return {
+          type: 'assistant',
+          role: 'assistant',
+          content: data.reply,
+          timestamp: new Date(),
+        };
+      }
+
+      // Handle step type messages
+      if (data.type === 'step' && typeof data.content === 'string') {
+        try {
+          const cleanedContent = cleanMarkdownCodeBlock(data.content);
+          const parsed = JSON.parse(cleanedContent);
+          console.log('Parsed step content:', parsed);
+          
+          if (parsed.reply && parsed.suggestions) {
+            setSuggestions(parsed.suggestions);
+            return {
+              type: 'assistant',
+              role: 'assistant',
+              content: parsed.reply,
+              timestamp: new Date(),
+            };
+          }
+        } catch (err) {
+          console.log('Failed to parse step content as JSON:', err);
+          return {
+            type: 'assistant',
+            role: 'assistant',
+            content: data.content,
+            timestamp: new Date(),
+          };
+        }
+      }
+
+      if (data.type === 'complete') {
+        return null;
+      }
+
+      // Handle error cases
+      if (data.type === 'error') {
+        return {
+          type: 'error',
+          content: data.content || 'An error occurred',
+          timestamp: new Date(),
+        };
+      }
+    }
+
+    // Fallback for unrecognized data
+    console.log('Unrecognized data format:', data);
     return {
       type: 'error',
-      content: `Unrecognized data: ${JSON.stringify(data)}`,
+      content: `Unrecognized data format: ${JSON.stringify(data)}`,
       timestamp: new Date(),
     };
   }
@@ -433,22 +487,56 @@ export default function ChatPage() {
           <div ref={messagesEndRef} />
         </Box>
 
-                  {suggestions.length > 0 && (
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
-              {suggestions.map((suggestion, index) => (
-                <Button
-                  key={index}
-                  variant="outlined"
-                  size="small"
-                  onClick={() => setInputMessage(suggestion)}
-                  sx={{ textTransform: 'none' }}
-                >
-                  {suggestion}
-                </Button>
-              ))}
-            </Box>
-          )}
-
+        {suggestions.length > 0 && (
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              gap: 1.5, 
+              flexWrap: 'wrap', 
+              mb: 2,
+              p: 2,
+              backgroundColor: 'rgba(0, 0, 0, 0.02)',
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'divider'
+            }}
+          >
+            {suggestions.map((suggestion, index) => (
+              <Button
+                key={index}
+                variant="outlined"
+                size="small"
+                onClick={() => {
+                  setInputMessage(suggestion);
+                  // Optionally auto-send the suggestion
+                  // handleSendMessage();
+                }}
+                sx={{ 
+                  textTransform: 'none',
+                  borderRadius: 2,
+                  borderColor: 'primary.light',
+                  color: 'primary.main',
+                  '&:hover': {
+                    backgroundColor: 'primary.light',
+                    borderColor: 'primary.main',
+                    color: 'primary.dark',
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  },
+                  transition: 'all 0.2s ease-in-out',
+                  maxWidth: '100%',
+                  whiteSpace: 'normal',
+                  textAlign: 'left',
+                  justifyContent: 'flex-start',
+                  px: 2,
+                  py: 1
+                }}
+              >
+                {suggestion}
+              </Button>
+            ))}
+          </Box>
+        )}
 
         <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
           <Box sx={{ display: 'flex', gap: 1 }}>
