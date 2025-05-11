@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import RecommendationCard from "@/components/RecommendationCard"
+import { useRouter } from "next/navigation"
 
 interface Recommendation {
   resource_type: string
@@ -13,6 +14,7 @@ interface Recommendation {
 export default function RecommendationsPage() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     const fetchRecommendations = async () => {
@@ -20,7 +22,7 @@ export default function RecommendationsPage() {
         const token = localStorage.getItem("token") || sessionStorage.getItem("token")
         if (!token) throw new Error("No authentication token found")
 
-        const response = await fetch("https://backend.clouvix.com/api/recommendations", {
+        const response = await fetch("http://localhost:8000/api/recommendations", {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -44,24 +46,26 @@ export default function RecommendationsPage() {
   }, [])
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       <h1 className="text-2xl font-bold">Recommended Actions for Your Resources</h1>
       {loading ? (
         <p>Loading recommendations...</p>
       ) : recommendations.length === 0 ? (
         <p className="text-muted-foreground">No recommendations found.</p>
       ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 max-h-[80vh] overflow-y-auto pr-2">
-            {recommendations.map((rec, index) => (
-                <RecommendationCard
-                key={index}
-                recommendation={rec}
-                onOptimize={(arn: string) => {
-                    console.log(`Optimising ${arn}`)
-                }}
-                />
-            ))}
-            </div>
+        <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          {recommendations.map((rec, index) => (
+            <RecommendationCard
+              key={index}
+              recommendation={rec}
+              onOptimize={(arn: string, resource_type: string, text: string) => {
+                const prompt = `Can you help me optimise my ${resource_type} with ARN ${arn}?\n\nHere is the recommendation:\n${text}`
+                sessionStorage.setItem("prefilledPrompt", prompt)
+                router.push("/chat")
+              }}
+            />
+          ))}
+        </div>
       )}
     </div>
   )

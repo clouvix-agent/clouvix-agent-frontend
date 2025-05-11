@@ -1,35 +1,42 @@
+import React from "react"
+
 interface Recommendation {
-    resource_type: string
-    arn: string
-    recommendation_text: string
-    updated_timestamp: string
-  }
-  
-  interface Props {
-    recommendation: Recommendation
-    onOptimize?: (arn: string) => void
-  }
-  
-  export default function RecommendationCard({ recommendation, onOptimize }: Props) {
-    return (
-      <div className="flex flex-col justify-between h-64 max-h-64 overflow-hidden rounded-lg border bg-white p-3 shadow-sm hover:shadow-md transition">
-        <div className="overflow-y-auto text-sm space-y-2 pr-1">
-          <div className="text-muted-foreground font-semibold">{recommendation.resource_type}</div>
-          <div className="font-medium break-words text-xs">{recommendation.arn}</div>
-          <div className="whitespace-pre-line text-sm text-gray-700">{recommendation.recommendation_text}</div>
-        </div>
-        <div className="mt-3">
-          <div className="text-xs text-right text-muted-foreground">
-            Updated: {new Date(recommendation.updated_timestamp).toLocaleString()}
-          </div>
-          <button
-            onClick={() => onOptimize?.(recommendation.arn)}
-            className="mt-2 w-full rounded-md bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow hover:from-blue-700 hover:to-indigo-700"
-          >
-            Optimise
-          </button>
-        </div>
+  resource_type: string
+  arn: string
+  recommendation_text: string
+  updated_timestamp: string
+}
+
+interface Props {
+  recommendation: Recommendation
+  onOptimize?: (arn: string, resource_type: string, recommendation_text: string) => void
+}
+
+export default function RecommendationCard({ recommendation, onOptimize }: Props) {
+  return (
+    <div className="flex flex-col justify-between h-full rounded-xl border bg-white p-4 shadow-sm transition hover:shadow-md">
+      <div className="flex flex-col gap-2 overflow-y-auto text-sm max-h-40">
+        <div className="text-xs font-semibold text-gray-500">{recommendation.resource_type}</div>
+        <div className="text-xs break-all text-gray-700">{recommendation.arn}</div>
+        <div className="text-sm whitespace-pre-line text-gray-800">{recommendation.recommendation_text}</div>
       </div>
-    )
-  }
-  
+      <div className="mt-4 flex items-center justify-between">
+        <span className="text-xs text-muted-foreground">
+          Updated: {new Date(recommendation.updated_timestamp).toLocaleString()}
+        </span>
+        <button
+          onClick={() =>
+            onOptimize?.(
+              recommendation.arn,
+              recommendation.resource_type,
+              recommendation.recommendation_text
+            )
+          }
+          className="text-xs px-3 py-1 bg-black text-white rounded-md hover:bg-gray-800 transition"
+        >
+          Optimise
+        </button>
+      </div>
+    </div>
+  )
+}
