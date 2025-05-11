@@ -51,11 +51,17 @@ export default function RecommendationsPage() {
       ) : recommendations.length === 0 ? (
         <p className="text-muted-foreground">No recommendations found.</p>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {recommendations.map((rec, index) => (
-            <RecommendationCard key={index} recommendation={rec} />
-          ))}
-        </div>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 max-h-[80vh] overflow-y-auto pr-2">
+            {recommendations.map((rec, index) => (
+                <RecommendationCard
+                key={index}
+                recommendation={rec}
+                onOptimize={(arn: string) => {
+                    console.log(`Optimising ${arn}`)
+                }}
+                />
+            ))}
+            </div>
       )}
     </div>
   )
