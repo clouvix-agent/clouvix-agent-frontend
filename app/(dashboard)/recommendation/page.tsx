@@ -22,7 +22,7 @@ export default function RecommendationsPage() {
         const token = localStorage.getItem("token") || sessionStorage.getItem("token")
         if (!token) throw new Error("No authentication token found")
 
-        const response = await fetch("http://localhost:8000/api/recommendations", {
+        const response = await fetch("https://backend.clouvix.com/api/recommendations", {
           headers: {
             Authorization: `Bearer ${token}`
           }
