@@ -20,7 +20,6 @@ import CheckIcon from '@mui/icons-material/Check';
 import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { clearAuth } from '../../utils/auth';
 
 interface Message {
   type: 'user' | 'assistant' | 'tool' | 'error';
@@ -39,7 +38,6 @@ export default function ChatPage() {
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
-
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -50,7 +48,6 @@ export default function ChatPage() {
   };
   useEffect(scrollToBottom, [messages]);
 
-  // ⭐ Prefill inputMessage from sessionStorage
   useEffect(() => {
     const prompt = sessionStorage.getItem('prefilledPrompt');
     if (prompt) {
@@ -60,82 +57,74 @@ export default function ChatPage() {
   }, []);
 
   const connectWebSocket = () => {
-    try {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
+    if (wsRef.current) {
+      wsRef.current.close();
+    }
 
-      const token = localStorage.getItem("token");
-      const ws = new WebSocket(`wss://backend.clouvix.com/ws/chat?token=${token}`);
+    const token = localStorage.getItem("token");
+    const ws = new WebSocket(`ws://localhost:8000/ws/chat?token=${token}`);
 
-      ws.onopen = () => {
-        setIsConnected(true);
-        setConnectionError(null);
-        console.log('Connected to WebSocket');
-      };
+    ws.onopen = () => {
+      setIsConnected(true);
+      setConnectionError(null);
+      console.log('Connected to WebSocket');
+    };
 
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
 
-          if (data?.type === 'complete' || data?.type === 'error') {
-            setIsLoading(false);
-          }
+        if (data?.type === 'complete' || data?.type === 'error') {
+          setIsLoading(false);
+          return; // ✅ Prevents falling through to unrecognized format
+        }
 
-          if (data?.suggestions) setSuggestions(data.suggestions);
+        if (data?.suggestions) setSuggestions(data.suggestions);
 
-          if (data?.reply && data?.suggestions) {
-            setSuggestions(data.suggestions);
-            setMessages((prev) => [
-              ...prev,
-              {
-                type: 'assistant',
-                role: 'assistant',
-                content: data.reply,
-                timestamp: new Date(),
-              },
-            ]);
-            return;
-          }
-
-          const newMsg = convertServerDataToMessage(data, setSuggestions);
-
-          if (newMsg) {
-            setMessages((prev) => {
-              const last = prev[prev.length - 1];
-              if (last?.type === newMsg.type && last?.content === newMsg.content) return prev;
-              return [...prev, newMsg];
-            });
-          }
-        } catch (error) {
-          console.error('Message parse error:', error);
+        if (data?.reply && data?.suggestions) {
+          setSuggestions(data.suggestions);
           setMessages((prev) => [
             ...prev,
-            { type: 'error', content: 'Message parsing error', timestamp: new Date() },
+            {
+              type: 'assistant',
+              role: 'assistant',
+              content: data.reply,
+              timestamp: new Date(),
+            },
           ]);
-          setIsLoading(false);
+          return;
         }
-      };
 
-      ws.onclose = (event) => {
-        setIsConnected(false);
-        setConnectionError('Connection lost. Attempting to reconnect...');
-        if (!event.wasClean) reconnectTimeoutRef.current = setTimeout(connectWebSocket, 3000);
-      };
+        const newMsg = convertServerDataToMessage(data, setSuggestions);
+        if (newMsg) {
+          setMessages((prev) => {
+            const last = prev[prev.length - 1];
+            if (last?.type === newMsg.type && last?.content === newMsg.content) return prev;
+            return [...prev, newMsg];
+          });
+        }
+      } catch (error) {
+        console.error('Message parse error:', error);
+        setMessages((prev) => [
+          ...prev,
+          { type: 'error', content: 'Message parsing error', timestamp: new Date() },
+        ]);
+        setIsLoading(false);
+      }
+    };
 
-      ws.onerror = () => {
-        setIsConnected(false);
-        setConnectionError(
-          'WebSocket error. Please check:\n- Backend is running\n- WS endpoint is correct\n- Network is stable'
-        );
-      };
+    ws.onclose = (event) => {
+      setIsConnected(false);
+      setConnectionError('Connection lost. Attempting to reconnect...');
+      if (!event.wasClean) reconnectTimeoutRef.current = setTimeout(connectWebSocket, 3000);
+    };
 
-      wsRef.current = ws;
-    } catch (error) {
-      console.error('WebSocket connection error:', error);
-      setConnectionError('WebSocket failed. Retrying...');
-      reconnectTimeoutRef.current = setTimeout(connectWebSocket, 3000);
-    }
+    ws.onerror = () => {
+      setIsConnected(false);
+      setConnectionError('WebSocket error. Please check your backend and network.');
+    };
+
+    wsRef.current = ws;
   };
 
   useEffect(() => {
