@@ -49,7 +49,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const ws = new WebSocket(`ws://localhost:8000/ws/chat?token=${token}`);
+    const ws = new WebSocket(`wss://backend.clouvix.com/ws/chat?token=${token}`);
 
     ws.onopen = () => {
       setIsConnected(true);
