@@ -49,7 +49,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const ws = new WebSocket(`wss://backend.clouvix.com/ws/chat?token=${token}`);
+    const ws = new WebSocket(`ws://localhost:8000/ws/chat?token=${token}`);
 
     ws.onopen = () => {
       setIsConnected(true);
@@ -60,24 +60,24 @@ export default function ChatPage() {
       try {
         const data = JSON.parse(event.data);
         console.log("Received:", data);
-    
-        // ✅ Skip completion notifications
+
         if (data.type === 'complete') {
           setIsLoading(false);
           return;
         }
-    
-        // ✅ Handle tool response as regular assistant message
+
         if (data.type === 'step' && typeof data.content === 'string') {
           setMessages((prev) => [
             ...prev,
             { type: 'assistant', content: data.content, timestamp: new Date() }
           ]);
+          if (data.suggestions) {
+            setSuggestions(data.suggestions);
+          }
           setIsLoading(false);
           return;
         }
-    
-        // ✅ Primary structure from backend: reply + suggestions
+
         if (data.reply || data.suggestions) {
           if (data.reply) {
             setMessages((prev) => [
@@ -91,8 +91,7 @@ export default function ChatPage() {
           setIsLoading(false);
           return;
         }
-    
-        // 🛑 Fallback: Show unexpected strings
+
         setMessages((prev) => [
           ...prev,
           { type: 'assistant', content: event.data, timestamp: new Date() }
@@ -137,7 +136,7 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, userMessage]);
     wsRef.current.send(inputMessage);
     setInputMessage('');
-    setSuggestions([]); // clear suggestions after sending
+    setSuggestions([]);
     setIsLoading(true);
   };
 
@@ -199,6 +198,16 @@ export default function ChatPage() {
                         {children}
                       </Typography>
                     ),
+                    a: ({ href, children }) => (
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#1976d2', textDecoration: 'underline', fontWeight: 500 }}
+                      >
+                        {children}
+                      </a>
+                    ),
                     code: ({ node, inline, className, children, ...props }: CodeProps) => {
                       const match = /language-(\w+)/.exec(className || '');
                       return !inline ? (
@@ -249,7 +258,7 @@ export default function ChatPage() {
                 variant="outlined"
                 onClick={() => {
                   setInputMessage(suggestion);
-                  setSuggestions([]); // optional: hide after selecting
+                  setSuggestions([]);
                 }}
                 sx={{ textTransform: 'none' }}
               >
