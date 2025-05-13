@@ -17,13 +17,18 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 
 interface Message {
   type: 'user' | 'assistant' | 'tool' | 'error';
   content: string;
   timestamp: Date;
+}
+
+interface CodeProps {
+  node?: any;
+  inline?: boolean;
+  className?: string;
+  children?: React.ReactNode;
 }
 
 export default function ChatPage() {
@@ -194,26 +199,27 @@ export default function ChatPage() {
                         {children}
                       </Typography>
                     ),
-                    code({ node, inline, className, children, ...props }) {
+                    code: ({ node, inline, className, children, ...props }: CodeProps) => {
                       const match = /language-(\w+)/.exec(className || '');
                       return !inline ? (
                         <Box sx={{ mt: 2, mb: 2 }}>
-                          <SyntaxHighlighter
-                            style={oneDark}
-                            language={match?.[1] || 'bash'}
-                            PreTag="div"
-                            customStyle={{
-                              borderRadius: '10px',
-                              padding: '1rem',
-                              maxHeight: '400px',
-                              overflowX: 'auto',
+                          <Box
+                            component="pre"
+                            sx={{
                               backgroundColor: '#1e1e1e',
-                              fontSize: '0.9rem'
+                              color: '#fff',
+                              padding: '1rem',
+                              borderRadius: '10px',
+                              overflowX: 'auto',
+                              fontSize: '0.9rem',
+                              fontFamily: 'monospace',
+                              maxHeight: '400px',
                             }}
-                            {...props}
                           >
-                            {String(children).replace(/\n$/, '')}
-                          </SyntaxHighlighter>
+                            <Box component="code" {...props}>
+                              {String(children).replace(/\n$/, '')}
+                            </Box>
+                          </Box>
                         </Box>
                       ) : (
                         <code className={className} {...props}>
